@@ -1,0 +1,13 @@
+{
+  "app_version": "0.2.0",
+  "profile": "production",
+  "log": {
+    "level": "error",
+    "dir": "../../logs",
+    "runtime_file": "runtime-2006-01-02.log",
+    "business_file": "business-2006-01-02.log",
+    "file_pattern": "^\\w+-\\d{4}-\\d{2}-\\d{2}\\.log$",
+    "max_days": 7,
+    "console": false
+  }
+}

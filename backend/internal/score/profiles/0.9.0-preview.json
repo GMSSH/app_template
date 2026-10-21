@@ -1,0 +1,75 @@
+{
+  "version": "0.9.0-preview",
+  "k": 0.357,
+  "preview": true,
+  "weights": [
+    {
+      "key": "cpu",
+      "weight": 4000,
+      "refs": [
+        {
+          "id": "single",
+          "ref": 2000,
+          "unit": "ops/s"
+        },
+        {
+          "id": "multi",
+          "ref": 2000,
+          "unit": "ops/s/core"
+        }
+      ]
+    },
+    {
+      "key": "mem",
+      "weight": 3000,
+      "refs": [
+        {
+          "id": "bandwidth",
+          "ref": 10,
+          "unit": "GB/s"
+        },
+        {
+          "id": "latency",
+          "ref": 100,
+          "unit": "ns"
+        }
+      ]
+    },
+    {
+      "key": "disk",
+      "weight": 3000,
+      "refs": [
+        {
+          "id": "seq_write",
+          "ref": 500,
+          "unit": "MB/s"
+        },
+        {
+          "id": "seq_read",
+          "ref": 500,
+          "unit": "MB/s"
+        },
+        {
+          "id": "rand_read_qd1",
+          "ref": 3000,
+          "unit": "IOPS"
+        },
+        {
+          "id": "rand_read_qd16",
+          "ref": 20000,
+          "unit": "IOPS"
+        },
+        {
+          "id": "rand_write_qd1",
+          "ref": 2000,
+          "unit": "IOPS"
+        },
+        {
+          "id": "fsync",
+          "ref": 100,
+          "unit": "ops/s"
+        }
+      ]
+    }
+  ]
+}
