@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
@@ -16,6 +17,7 @@ const props = withDefaults(
   }
 )
 
+const { t } = useI18n()
 const prog = ref(0)
 const shown = ref(0)
 let raf = 0
@@ -49,7 +51,7 @@ const pct = computed(() => {
 })
 
 const ringLabel = computed(() => {
-  if (props.variant === 'total') return '全部'
+  if (props.variant === 'total') return t('ringAll')
   return Math.round(pct.value) + '%'
 })
 

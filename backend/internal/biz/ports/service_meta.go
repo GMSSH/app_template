@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gmssh-cli-plugin/internal/i18n"
 )
 
 // DockerInfo carries real container metadata
@@ -51,34 +53,34 @@ var knownSummaries = map[string]struct {
 	name     string
 	summary  string
 }{
-	"nginx":         {"web", "Nginx", "高性能 HTTP 服务器与反向代理服务器"},
-	"httpd":         {"web", "Apache HTTP Server", "经典开源 Web 服务器"},
-	"apache2":       {"web", "Apache HTTP Server", "经典开源 Web 服务器"},
-	"caddy":         {"web", "Caddy", "支持自动 HTTPS 的现代通用 Web 服务器"},
-	"traefik":       {"web", "Traefik", "现代 HTTP 反向代理与微服务负载均衡器"},
-	"openresty":     {"web", "OpenResty", "基于 Nginx 与 Lua 的高性能 Web 平台"},
+	"nginx":         {"web", "Nginx", "svc.nginx.summary"},
+	"httpd":         {"web", "Apache HTTP Server", "svc.apache.summary"},
+	"apache2":       {"web", "Apache HTTP Server", "svc.apache.summary"},
+	"caddy":         {"web", "Caddy", "svc.caddy.summary"},
+	"traefik":       {"web", "Traefik", "svc.traefik.summary"},
+	"openresty":     {"web", "OpenResty", "svc.openresty.summary"},
 
-	"mysqld":        {"db", "MySQL", "流行开源关系型数据库管理系统"},
-	"mysql":         {"db", "MySQL", "流行开源关系型数据库管理系统"},
-	"mariadbd":      {"db", "MariaDB", "开源社区驱动的关系型数据库"},
-	"postgres":      {"db", "PostgreSQL", "功能强大的高级开源对象关系型数据库"},
-	"redis-server":  {"db", "Redis", "高性能内存键值数据存储与缓存系统"},
-	"redis":         {"db", "Redis", "高性能内存键值数据存储与缓存系统"},
-	"mongod":        {"db", "MongoDB", "面向文档的分布式非关系型数据库"},
-	"elasticsearch": {"db", "Elasticsearch", "分布式全文搜索与分析引擎"},
-	"clickhouse-ser": {"db", "ClickHouse", "面向列的实时分析型数据库"},
+	"mysqld":        {"db", "MySQL", "svc.mysql.summary"},
+	"mysql":         {"db", "MySQL", "svc.mysql.summary"},
+	"mariadbd":      {"db", "MariaDB", "svc.mariadb.summary"},
+	"postgres":      {"db", "PostgreSQL", "svc.postgres.summary"},
+	"redis-server":  {"db", "Redis", "svc.redis.summary"},
+	"redis":         {"db", "Redis", "svc.redis.summary"},
+	"mongod":        {"db", "MongoDB", "svc.mongodb.summary"},
+	"elasticsearch": {"db", "Elasticsearch", "svc.elasticsearch.summary"},
+	"clickhouse-ser": {"db", "ClickHouse", "svc.clickhouse.summary"},
 
-	"pm2":           {"manager", "PM2", "Node.js 生产环境进程管理器"},
-	"supervisord":   {"manager", "Supervisor", "基于 Python 的客户端/服务器进程管理系统"},
+	"pm2":           {"manager", "PM2", "svc.pm2.summary"},
+	"supervisord":   {"manager", "Supervisor", "svc.supervisor.summary"},
 
-	"node":          {"unmanaged", "Node.js", "基于 V8 引擎的 JavaScript 运行时环境"},
-	"python":        {"unmanaged", "Python", "解释型高级通用编程语言环境"},
-	"python3":       {"unmanaged", "Python 3", "解释型高级通用编程语言环境"},
-	"java":          {"unmanaged", "Java", "跨平台类企业级后端应用运行时环境"},
+	"node":          {"unmanaged", "Node.js", "svc.node.summary"},
+	"python":        {"unmanaged", "Python", "svc.python.summary"},
+	"python3":       {"unmanaged", "Python 3", "svc.python.summary"},
+	"java":          {"unmanaged", "Java", "svc.java.summary"},
 
-	"sshd":          {"system", "OpenSSH SSHD", "安全 Shell 远程访问服务器守护进程"},
-	"systemd-resolv": {"system", "systemd-resolved", "网络名称解析系统服务"},
-	"chronyd":       {"system", "Chrony", "网络时间协议 (NTP) 守护进程"},
+	"sshd":          {"system", "OpenSSH SSHD", "svc.sshd.summary"},
+	"systemd-resolv": {"system", "systemd-resolved", "svc.systemd_resolved.summary"},
+	"chronyd":       {"system", "Chrony", "svc.chrony.summary"},
 }
 
 // inspectService resolves category, factual summary, docker metadata, and systemd metadata
@@ -94,7 +96,7 @@ func inspectService(pname string, pid *int, cmd string, port int, proto string, 
 	// 1. Check if Docker container (e.g. docker-proxy or container cgroup)
 	if strings.Contains(lowerName, "docker") || strings.Contains(lowerCmd, "docker-proxy") {
 		meta.Category = "container"
-		meta.Summary = "Docker 容器网络代理服务"
+		meta.Summary = i18n.T("svc.docker_proxy.summary")
 		dInfo := inspectDocker(port, proto, cmd)
 		if dInfo != nil {
 			meta.Docker = dInfo
@@ -103,12 +105,12 @@ func inspectService(pname string, pid *int, cmd string, port int, proto string, 
 			}
 		}
 		if meta.ServiceName == "" {
-			meta.ServiceName = "Docker 容器"
+			meta.ServiceName = i18n.T("svc.docker_container.name")
 		}
 	} else if matched, ok := knownSummaries[lowerName]; ok {
 		meta.Category = matched.category
 		meta.ServiceName = matched.name
-		meta.Summary = matched.summary
+		meta.Summary = i18n.T(matched.summary)
 		// Smart refinement: if process is python/node/java/ruby but command is serving HTTP, classify as web!
 		if meta.Category == "unmanaged" {
 			if strings.Contains(lowerCmd, "http.server") || strings.Contains(lowerCmd, "flask") ||
@@ -122,9 +124,9 @@ func inspectService(pname string, pid *int, cmd string, port int, proto string, 
 				siteName := extractSiteName(cmd, cwd, matched.name)
 				if siteName != "" {
 					meta.ServiceName = siteName
-					meta.Summary = "基于 " + matched.name + " 的 Web 应用服务 (" + matched.name + ")"
+					meta.Summary = i18n.T("svc.web_app.summary", matched.name)
 				} else {
-					meta.Summary = "基于 " + matched.name + " 的 Web HTTP 应用服务"
+					meta.Summary = i18n.T("svc.web_http.summary", matched.name)
 				}
 			}
 		}
@@ -134,7 +136,7 @@ func inspectService(pname string, pid *int, cmd string, port int, proto string, 
 			if strings.Contains(lowerCmd, k) {
 				meta.Category = v.category
 				meta.ServiceName = v.name
-				meta.Summary = v.summary
+				meta.Summary = i18n.T(v.summary)
 				break
 			}
 		}
@@ -148,9 +150,9 @@ func inspectService(pname string, pid *int, cmd string, port int, proto string, 
 				siteName := extractSiteName(cmd, cwd, pname)
 				if siteName != "" {
 					meta.ServiceName = siteName
-					meta.Summary = "Web 应用服务 (" + pname + ")"
+					meta.Summary = i18n.T("svc.web_app_generic.summary", pname)
 				} else {
-					meta.Summary = "Web HTTP 应用服务"
+					meta.Summary = i18n.T("svc.web_http_generic.summary")
 				}
 			}
 		}
@@ -327,19 +329,19 @@ func getProcUptime(pid int) string {
 	}
 	dur := time.Since(fi.ModTime())
 	if dur < time.Minute {
-		return fmt.Sprintf("%d 秒", int(dur.Seconds()))
+		return i18n.T("svc.uptime.seconds", int(dur.Seconds()))
 	}
 	if dur < time.Hour {
-		return fmt.Sprintf("%d 分钟", int(dur.Minutes()))
+		return i18n.T("svc.uptime.minutes", int(dur.Minutes()))
 	}
 	if dur < 24*time.Hour {
 		h := int(dur.Hours())
 		m := int(dur.Minutes()) % 60
-		return fmt.Sprintf("%d 小时 %d 分钟", h, m)
+		return i18n.T("svc.uptime.hours_minutes", h, m)
 	}
 	d := int(dur.Hours()) / 24
 	h := int(dur.Hours()) % 24
-	return fmt.Sprintf("%d 天 %d 小时", d, h)
+	return i18n.T("svc.uptime.days_hours", d, h)
 }
 
 func getProcMemoryRSS(pid int) string {

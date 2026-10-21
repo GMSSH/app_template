@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
 import { useApp } from './composables/useApp'
 import { useI18n } from 'vue-i18n'
 import { scanPorts } from './api/ports'
@@ -16,6 +16,8 @@ const { windowWidth, windowHeight } = useApp()
 const theme = ref<'light' | 'dark'>(window.$gm?.theme === 'dark' ? 'dark' : 'light')
 watch(theme, (v) => (document.documentElement.dataset.theme = v), { immediate: true })
 const toggleLang = () => (locale.value = locale.value === 'zh-CN' ? 'en-US' : 'zh-CN')
+// 标签页标题跟随当前语言
+watchEffect(() => { document.title = t('title'); document.documentElement.lang = locale.value })
 
 /* ---------- 数据 ---------- */
 const entries = ref<PortEntry[]>([])
@@ -164,7 +166,7 @@ function onSelectProc(ports: PortGroup[], portKey?: string) {
     ...first.service,
     category: cat,
     serviceName: displayName,
-    summary: displayName !== first.processName ? `基于 ${first.service.serviceName || first.processName} 的应用服务` : first.service.summary,
+    summary: displayName !== first.processName ? t('appService', { name: first.service.serviceName || first.processName }) : first.service.summary,
   } : undefined
 
   procDetail.value = {
@@ -271,28 +273,28 @@ onMounted(refresh)
           :label="t('stats.total')"
           :value="stats.total"
           :total-count="stats.total"
-          :sub-text="'来自 ' + groups.length + ' 个监听服务'"
+          :sub-text="t('statsSub.services', { n: groups.length })"
           variant="total"
         />
         <StatCard
           :label="t('stats.tcp')"
           :value="stats.tcp"
           :total-count="stats.total"
-          :sub-text="'面向连接的服务'"
+          :sub-text="t('statsSub.tcp')"
           variant="tcp"
         />
         <StatCard
           :label="t('stats.udp')"
           :value="stats.udp"
           :total-count="stats.total"
-          :sub-text="'无连接的数据报'"
+          :sub-text="t('statsSub.udp')"
           variant="udp"
         />
         <StatCard
           :label="t('stats.external')"
           :value="stats.external"
           :total-count="stats.total"
-          :sub-text="stats.external ? '建议检查是否公开' : '没有对外暴露的端口'"
+          :sub-text="stats.external ? t('statsSub.externalOn') : t('statsSub.externalOff')"
           variant="external"
         />
       </section>
@@ -311,10 +313,10 @@ onMounted(refresh)
         </div>
 
         <div class="legend">
-          <span><i class="kd" style="--c: var(--c-native)" />原生应用</span>
-          <span><i class="kd" style="--c: var(--c-systemd)" />Systemd 服务</span>
-          <span><i class="kd" style="--c: var(--c-docker)" />Docker 容器</span>
-          <span><i class="kd" style="--c: var(--c-daemon)" />守护进程</span>
+          <span><i class="kd" style="--c: var(--c-native)" />{{ t('legend.native') }}</span>
+          <span><i class="kd" style="--c: var(--c-systemd)" />{{ t('legend.systemd') }}</span>
+          <span><i class="kd" style="--c: var(--c-docker)" />{{ t('legend.docker') }}</span>
+          <span><i class="kd" style="--c: var(--c-daemon)" />{{ t('legend.daemon') }}</span>
           <span style="margin-left: 8px"><i class="k" />TCP</span>
           <span><i class="k udp" />UDP</span>
         </div>
@@ -342,7 +344,7 @@ onMounted(refresh)
         <div v-if="!graph.nodes.length && !loading" class="empty">
           <div>
             <b>{{ t('empty') }}</b>
-            <span>换个关键词，或切换上方的筛选条件</span>
+            <span>{{ t('emptyHint') }}</span>
           </div>
         </div>
 

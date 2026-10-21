@@ -65,10 +65,10 @@ async function releaseSingle(g: PortGroup) {
         releaseMsg.value = null
       }, 700)
     } else {
-      releaseMsg.value = { type: 'err', text: res.message || '释放失败' }
+      releaseMsg.value = { type: 'err', text: res.message || t('releaseFailed') }
     }
   } catch (e: any) {
-    releaseMsg.value = { type: 'err', text: e?.message || '释放失败' }
+    releaseMsg.value = { type: 'err', text: e?.message || t('releaseFailed') }
   } finally {
     releasingKey.value = null
   }
@@ -94,10 +94,10 @@ async function killWholeProcess() {
         confirmAll.value = false
       }, 800)
     } else {
-      releaseMsg.value = { type: 'err', text: res.message || '终止进程失败' }
+      releaseMsg.value = { type: 'err', text: res.message || t('killFailed') }
     }
   } catch (e: any) {
-    releaseMsg.value = { type: 'err', text: e?.message || '终止进程失败' }
+    releaseMsg.value = { type: 'err', text: e?.message || t('killFailed') }
   } finally {
     releasingKey.value = null
   }
@@ -107,16 +107,7 @@ const service = computed(() => props.detail?.service)
 const docker = computed(() => service.value?.docker)
 const systemd = computed(() => service.value?.systemd)
 
-const categoryLabel = computed(() => {
-  switch (service.value?.category) {
-    case 'web': return 'Web 服务'
-    case 'db': return '数据库'
-    case 'container': return '容器服务'
-    case 'manager': return '进程管理'
-    case 'system': return '系统服务'
-    default: return '未托管进程'
-  }
-})
+const categoryLabel = computed(() => t('category.' + (service.value?.category || 'unmanaged')))
 
 const categoryClass = computed(() => {
   switch (service.value?.category) {
@@ -131,7 +122,7 @@ const categoryClass = computed(() => {
 </script>
 
 <template>
-  <aside class="panel" :class="{ open: !!detail }" aria-label="服务与端口详情">
+  <aside class="panel" :class="{ open: !!detail }" :aria-label="t('panelAria')">
     <div class="panel-inner" v-if="detail">
       <!-- 头部：服务名与关闭 -->
       <div class="panel-head">
@@ -146,11 +137,11 @@ const categoryClass = computed(() => {
           <div class="tags-row">
             <span v-if="service?.uptime" class="meta-tag">
               <Clock :size="12" class="meta-icon" />
-              <span>运行 {{ service.uptime }}</span>
+              <span>{{ t('runningFor', { v: service.uptime }) }}</span>
             </span>
             <span v-if="service?.memoryRss" class="meta-tag">
               <HardDrive :size="12" class="meta-icon" />
-              <span>内存 {{ service.memoryRss }}</span>
+              <span>{{ t('memoryUse', { v: service.memoryRss }) }}</span>
             </span>
             <span v-if="detail.user" class="meta-tag">
               <User :size="12" class="meta-icon" />
@@ -158,7 +149,7 @@ const categoryClass = computed(() => {
             </span>
           </div>
         </div>
-        <button class="close-btn" @click="emit('close')" title="关闭面板">
+        <button class="close-btn" @click="emit('close')" :title="t('closePanel')">
           <X :size="16" />
         </button>
       </div>
@@ -175,28 +166,28 @@ const categoryClass = computed(() => {
           <div v-if="docker" class="docker-card">
             <div class="sec-label">
               <Container :size="13" style="margin-right: 4px;" />
-              Docker 容器详情
+              {{ t('dockerCard') }}
             </div>
             <div class="prop-grid">
               <div v-if="docker.containerName" class="prop-item">
-                <span class="k">容器名称</span>
+                <span class="k">{{ t('prop.containerName') }}</span>
                 <span class="v mono highlight">{{ docker.containerName }}</span>
               </div>
               <div v-if="docker.image" class="prop-item">
-                <span class="k">容器镜像</span>
+                <span class="k">{{ t('prop.containerImage') }}</span>
                 <span class="v mono">{{ docker.image }}</span>
               </div>
               <div v-if="docker.containerId" class="prop-item">
-                <span class="k">容器 ID</span>
+                <span class="k">{{ t('prop.containerId') }}</span>
                 <span class="v mono">{{ docker.containerId }}</span>
               </div>
               <div v-if="docker.internalPort" class="prop-item">
-                <span class="k">容器内部端口</span>
+                <span class="k">{{ t('prop.containerPort') }}</span>
                 <span class="v mono">{{ docker.internalPort }}</span>
               </div>
             </div>
             <div v-if="docker.cmd" class="cmd-block" style="margin-top: 8px;">
-              <span class="k">容器启动命令</span>
+              <span class="k">{{ t('prop.containerCmd') }}</span>
               <pre class="mono">{{ docker.cmd }}</pre>
             </div>
           </div>
@@ -205,39 +196,39 @@ const categoryClass = computed(() => {
           <div v-if="systemd" class="systemd-card">
             <div class="sec-label">
               <Settings :size="13" style="margin-right: 4px;" />
-              Systemd Unit 属性
+              {{ t('systemdCard') }}
             </div>
             <div class="prop-grid">
               <div v-if="systemd.unitName" class="prop-item">
-                <span class="k">Unit 服务名称</span>
+                <span class="k">{{ t('prop.unitName') }}</span>
                 <span class="v mono highlight">{{ systemd.unitName }}</span>
               </div>
               <div v-if="systemd.activeState" class="prop-item">
-                <span class="k">ActiveState / SubState</span>
+                <span class="k">{{ t('prop.activeState') }}</span>
                 <span class="v mono">{{ systemd.activeState }} ({{ systemd.subState }})</span>
               </div>
               <div v-if="systemd.fragmentPath" class="prop-item full-width">
-                <span class="k">配置文件 (FragmentPath)</span>
+                <span class="k">{{ t('prop.fragmentPath') }}</span>
                 <span class="v mono selectable">{{ systemd.fragmentPath }}</span>
               </div>
               <div v-if="systemd.memoryCurrent" class="prop-item">
-                <span class="k">当前内存占用</span>
+                <span class="k">{{ t('prop.memCurrent') }}</span>
                 <span class="v mono">{{ systemd.memoryCurrent }}</span>
               </div>
               <div v-if="systemd.cpuUsageNSec" class="prop-item">
-                <span class="k">CPU 累计耗时</span>
+                <span class="k">{{ t('prop.cpuTotal') }}</span>
                 <span class="v mono">{{ systemd.cpuUsageNSec }}</span>
               </div>
             </div>
             <div v-if="systemd.execStart" class="cmd-block" style="margin-top: 8px;">
-              <span class="k">ExecStart 执行命令</span>
+              <span class="k">{{ t('prop.execStart') }}</span>
               <pre class="mono">{{ systemd.execStart }}</pre>
             </div>
           </div>
 
           <!-- 3. 第三层：服务占用的端口关系 -->
           <div class="ports-header-row">
-            <span class="sec-label">服务监听端口清单 ({{ detail.ports.length }})</span>
+            <span class="sec-label">{{ t('portList', { n: detail.ports.length }) }}</span>
           </div>
 
           <div class="port-list">
@@ -252,7 +243,7 @@ const categoryClass = computed(() => {
                   <span class="proto-badge mono" :class="g.protocol.toLowerCase()">{{ g.protocol }}</span>
                   <span class="port-num mono">{{ g.port }}</span>
                   <span v-if="docker?.internalPort && g.port === 8080" class="container-map mono">
-                    → 容器 {{ docker.internalPort }}
+                    → {{ t('containerMap', { p: docker.internalPort }) }}
                   </span>
                   <span class="state-pill mono">{{ g.state }}</span>
                 </div>
@@ -268,26 +259,26 @@ const categoryClass = computed(() => {
                 class="release-single-btn"
                 :disabled="releasingKey === g.key"
                 @click="releaseSingle(g)"
-                title="释放此端口"
+                :title="t('releaseThisPort')"
               >
-                {{ releasingKey === g.key ? '释放中…' : '释放端口' }}
+                {{ releasingKey === g.key ? t('releasingPort') : t('release') }}
               </button>
-              <span v-else class="protected-pill" title="系统核心连接端口，系统保护禁止释放">
+              <span v-else class="protected-pill" :title="t('protectedPillTitle')">
                 <ShieldCheck :size="11" style="flex-shrink: 0;" />
-                核心保护
+                {{ t('protectedPill') }}
               </span>
             </div>
           </div>
 
           <!-- 4. 未托管/通用进程启动信息 -->
           <div v-if="!docker && !systemd" class="process-meta-box">
-            <div class="sec-label">进程执行信息</div>
+            <div class="sec-label">{{ t('execInfo') }}</div>
             <div class="cmd-block" v-if="detail.command">
-              <span class="k">启动命令</span>
+              <span class="k">{{ t('prop.startCmd') }}</span>
               <pre class="mono">{{ detail.command }}</pre>
             </div>
             <div class="prop-item" v-if="detail.workingDirectory">
-              <span class="k">工作目录</span>
+              <span class="k">{{ t('prop.workDir') }}</span>
               <span class="v mono selectable">{{ detail.workingDirectory }}</span>
             </div>
           </div>
@@ -304,11 +295,11 @@ const categoryClass = computed(() => {
           @click="killWholeProcess"
         >
           <PowerOff :size="14" />
-          {{ confirmAll ? '确认终止进程' : '终止进程' }}
+          {{ confirmAll ? t('confirmKill') : t('killProc') }}
         </button>
         <div v-else class="protected-foot-notice">
           <ShieldAlert :size="14" style="flex-shrink: 0;" />
-          <span>系统核心保护：远程管控服务 (SSH / GMSSH)，禁止被终止</span>
+          <span>{{ t('protectedFoot') }}</span>
         </div>
       </div>
     </div>

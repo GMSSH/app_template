@@ -91,12 +91,8 @@ const getKindColor = (type?: string) => {
 }
 
 const getOwnerLabel = (type?: string) => {
-  switch (type) {
-    case 'docker': return 'Docker 容器'
-    case 'systemd': return 'Systemd 服务'
-    case 'daemon': return '守护进程'
-    default: return '原生应用'
-  }
+  const key = ['docker', 'systemd', 'daemon'].includes(type || '') ? type! : 'native'
+  return t('legend.' + key)
 }
 </script>
 
@@ -125,11 +121,11 @@ const getOwnerLabel = (type?: string) => {
           <Handle type="source" :position="Position.Right" />
           <div class="t">
             <i />
-            <span>{{ data.scope === 'external' ? '对外监听' : '本机监听' }}</span>
+            <span>{{ data.scope === 'external' ? t('hub.external') : t('hub.local') }}</span>
           </div>
           <div class="ip mono">{{ data.scope === 'external' ? '0.0.0.0' : '127.0.0.1' }}</div>
           <div class="s">
-            {{ data.count }} 个端口 · {{ data.scope === 'external' ? '任何网络可访问' : '仅本机可访问' }}
+            {{ t('hub.ports', { n: data.count }) }} · {{ data.scope === 'external' ? t('hub.accessExternal') : t('hub.accessLocal') }}
           </div>
         </div>
       </template>
@@ -207,7 +203,7 @@ const getOwnerLabel = (type?: string) => {
     </VueFlow>
 
     <!-- 画布操作提示 -->
-    <div class="hint mono">拖动画布平移，滚轮缩放，点击卡片或端口查看详情与释放</div>
+    <div class="hint mono">{{ t('canvasHint') }}</div>
   </div>
 </template>
 

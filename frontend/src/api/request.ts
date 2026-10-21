@@ -39,7 +39,7 @@ export async function callCli<T>(command: string, args: Record<string, string | 
     bin = bin.replace('/.__gmssh', home)
   }
 
-  const lang = sdk?.lang || 'en'
+  const lang = document.documentElement.lang || sdk?.lang || 'zh-CN'
   const flags = Object.entries({ ...args, lang }).map(([k, v]) => `--${k} ${q(String(v))}`).join(' ')
   const cmd_string = `${q(bin)} ${command} ${flags} --json`
 
@@ -72,10 +72,10 @@ function unwrapExec<T>(resp: any, binPath: string): T {
   // 如果执行报错 "No such file or directory" 或者找不到文件
   const combined = (stderr + '\n' + text).trim()
   if (combined.includes('No such file') || combined.includes('command not found') || combined.includes('not found')) {
-    throw new Error(`后端未就绪：请确保已将后端部署至 ${binPath}`)
+    throw new Error(`Backend not deployed: expected at ${binPath}`)
   }
   if (combined.includes('Permission denied')) {
-    throw new Error(`后端无执行权限：请为 ${binPath} 添加执行权限 (chmod +x)`)
+    throw new Error(`Backend not executable: run chmod +x ${binPath}`)
   }
 
   const trimmed = text.trim()

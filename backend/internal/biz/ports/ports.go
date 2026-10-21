@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"gmssh-cli-plugin/internal/i18n"
 	"gmssh-cli-plugin/internal/input"
 	"gmssh-cli-plugin/internal/middleware"
 )
@@ -85,7 +86,7 @@ func handleKill(pid int) (map[string]any, error) {
 	for _, e := range entries {
 		if e.PID != nil && *e.PID == pid {
 			if e.Port == 22 || isSystemCoreService(e.ProcessName, e.Command) {
-				return nil, fmt.Errorf("安全保护：SSH (22) 与 GMSSH 宿主底层核心服务受保护，禁止终止！")
+				return nil, fmt.Errorf("%s", i18n.T("ports.protected_kill"))
 			}
 		}
 	}
@@ -99,13 +100,13 @@ func handleKill(pid int) (map[string]any, error) {
 
 func handleRelease(port int, proto string, pid int) (map[string]any, error) {
 	if port == 22 {
-		return nil, fmt.Errorf("安全保护：SSH 端口 (22) 为远程连接核心通道，禁止释放！")
+		return nil, fmt.Errorf("%s", i18n.T("ports.protected_ssh_release"))
 	}
 	// Check if target port belongs to GMSSH core services
 	entries, _ := handleScan()
 	for _, e := range entries {
 		if e.Port == port && isSystemCoreService(e.ProcessName, e.Command) {
-			return nil, fmt.Errorf("安全保护：GMSSH 宿主服务监听端口受保护，禁止释放！")
+			return nil, fmt.Errorf("%s", i18n.T("ports.protected_core_release"))
 		}
 	}
 	if pid > 1 { return handleKill(pid) }
