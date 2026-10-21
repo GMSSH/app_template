@@ -1,6 +1,6 @@
 export default {
   title: '端口地图', server: '生产服务器', refresh: '刷新', auto: '自动刷新', autoOff: '关闭', auto30: '30 秒',
-  searchPh: '搜索端口，例如 8080', mock: '演示数据', scanning: '正在查询服务器端口……',
+  searchPh: '搜索端口，例如 8080', scanning: '正在查询服务器端口……',
   stats: { total: '监听端口', tcp: 'TCP 端口', udp: 'UDP 端口', external: '对外监听' },
   statsSub: {
     services: '来自 {n} 个监听服务',

@@ -19,11 +19,6 @@ export async function loadIdentity(): Promise<Identity> {
   return identity!
 }
 
-export async function isMock(): Promise<boolean> {
-  const sdk = window.$gm
-  return !sdk?.request
-}
-
 const q = (v: string) => "'" + String(v).replace(/'/g, "'\\''") + "'"
 
 export async function callCli<T>(command: string, args: Record<string, string | number> = {}): Promise<T> {

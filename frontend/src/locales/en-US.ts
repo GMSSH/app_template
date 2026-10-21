@@ -1,6 +1,6 @@
 export default {
   title: 'Port Map', server: 'Production Server', refresh: 'Refresh', auto: 'Auto Refresh', autoOff: 'Off', auto30: '30s',
-  searchPh: 'Search port, e.g. 8080', mock: 'Demo Data', scanning: 'Scanning server listening ports...',
+  searchPh: 'Search port, e.g. 8080', scanning: 'Scanning server listening ports...',
   stats: { total: 'Listening Ports', tcp: 'TCP Ports', udp: 'UDP Ports', external: 'Public Ports' },
   statsSub: {
     services: 'Across {n} listening services',

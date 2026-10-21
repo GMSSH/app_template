@@ -23,7 +23,6 @@ watchEffect(() => { document.title = t('title'); document.documentElement.lang =
 const entries = ref<PortEntry[]>([])
 const loading = ref(false)
 const scanning = ref(false)
-const isMockData = ref(true)
 const errMsg = ref('')
 const groups = computed(() => groupPorts(entries.value))
 
@@ -35,9 +34,7 @@ async function refresh() {
   setTimeout(() => (scanning.value = true), 20)
   const hadHit = searchPort.value !== null && matched.value.length > 0
   try {
-    const r = await scanPorts()
-    entries.value = r.list
-    isMockData.value = r.mock
+    entries.value = await scanPorts()
     if (procDetail.value) {
       const stillHas = groups.value.filter(
         (g) => g.pid === procDetail.value?.pid && g.processName === procDetail.value?.name
