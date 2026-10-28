@@ -1,6 +1,102 @@
-# SSH 安全足迹 (SSH Security Footprint)
+# SSH 安全足迹 (sshFootprint) · 极目桌面微应用
 
-极目 Linux 桌面轻量级微应用，通过读取 Linux 服务器本地 SSH 认证日志，让用户直观了解服务器的 SSH 登录活动，将复杂的安全审计日志转化为 Apple 风格的可视化报告。
+读取 Linux 服务器本地 SSH 认证日志，把「谁在尝试登录这台机器」变成一份可核对的可视化报告：失败/成功次数、时间分布、可疑来源 IP 排行，以及每条判定的原始日志取证。
+
+**只读**：不访问外部网络、不装软件、不改 SSH 配置、不动防火墙。
+
+## 接口请求
+
+前端不直连后端，统一让宿主执行命令再解析 JSON。
+
+| 项 | 值 |
+|---|---|
+| 应用标识 | `user_id: jg` / `app_name: sshFootprint` |
+| 二进制路径 | `/.__gmssh/plugin/liteapp/jg/sshFootprint/app/bin/main` |
+| 命令名 | `ssh_footprint` |
+
+```js
+const bin = '/.__gmssh/plugin/liteapp/jg/sshFootprint/app/bin/main'
+
+await window.$gm.request('/api/command/exec_shell', {
+  method: 'post',
+  data: {
+    cmd_string: `'${bin}' ssh_footprint --action scan --range 24h --json`,
+    timeout: '30', cwd: '', user: '',
+  },
+})
+```
+
+### 命令一览
+
+| `--action` | 参数 | 用途 |
+|---|---|---|
+| `probe` | 无 | 探测可用日志源、权限、时区 |
+| `scan` | `--range 24h\|7d\|30d` | 解析日志并返回统计结果 |
+
+### 返回结构
+
+统一信封，业务数据在 `data` 里：
+
+```json
+{
+  "ok": true,
+  "data": {
+    "range": "24h",
+    "scan_time": "2026-10-26 11:53:43",
+    "timezone": "CST",
+    "window_start": "2026-10-25 11:53:43",
+    "window_end": "2026-10-26 11:53:43",
+    "count_method": "按认证事件计数：一次认证尝试只算 1 次……",
+    "active_source": "systemd-journal (ssh.service)",
+    "summary": { "total_failed": 1284, "total_success": 42, "unique_ips": 30 },
+    "buckets": [
+      { "label": "11:00", "start_time": 1761, "end_time": 1762, "failed_count": 63, "success_count": 1 }
+    ],
+    "ip_list": [
+      {
+        "ip": "212.18.52.25",
+        "failed_count": 128, "success_count": 0,
+        "users": ["admin", "root"],
+        "first_seen": "2026-10-26 23:01:55", "last_seen": "2026-10-26 23:41:02",
+        "risk_level": "high",
+        "risk_tags": ["高频登录尝试", "多账号尝试"],
+        "risk_reasons": ["5分钟内连续认证失败超过20次", "尝试了 3 个不同用户名 (admin, root, test)"],
+        "logs": ["Oct 26 23:41:02 srv sshd[1283]: Failed password for invalid user admin from 212.18.52.25 port 48102 ssh2"]
+      }
+    ]
+  }
+}
+```
+
+### 统计口径（与日志行数核对时必读）
+
+`failed_count` **不是**日志行数。一次 SSH 认证尝试在 sshd 里会写 2~3 行（`Invalid user`、`Failed password`、`Connection closed [preauth]`）。
+
+| 计数项 | 定义 |
+|---|---|
+| 失败 | `Failed password` 或 `Invalid user` 行，同一连接去重后算 1 次 |
+| 成功 | `Accepted password` 或 `Accepted publickey` 行 |
+| 不计入 | `Connection closed`、`Received disconnect`、banner exchange 等连接层日志 |
+
+所以 `grep -c` 出来的行数一定大于接口值，这是设计如此。
+
+### 服务器上直接验证
+
+```bash
+BIN=/.__gmssh/plugin/liteapp/jg/sshFootprint/app/bin/main
+
+$BIN ssh_footprint --action probe --json | jq '.data'
+$BIN ssh_footprint --action scan --range 24h --json | jq '.data.summary'
+$BIN ssh_footprint --action scan --range 24h --json | jq '.data.ip_list[:5]'
+
+# 口径自校验：逐 IP 求和应等于汇总
+$BIN ssh_footprint --action scan --range 24h --json | jq '{
+  total_failed: .data.summary.total_failed,
+  sum_from_ip_list: ([.data.ip_list[].failed_count] | add),
+  unique_ips: .data.summary.unique_ips,
+  ip_list_len: (.data.ip_list | length)
+}'
+```
 
 ---
 
