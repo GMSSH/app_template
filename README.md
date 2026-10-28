@@ -1,6 +1,77 @@
-# 攻击雷达 (Attack Radar) · 极目桌面微应用
+# 攻击雷达 (attackRadar) · 极目桌面微应用
 
-基于 GMSSH 微应用标准的服务器 3D 态势感知与全球安全态势大屏。
+在 3D 地球 / 2D 平面地图上展示本机服务器正在被哪些 IP、哪些国家攻击。左侧列表可以按事件类型筛选，飞线终点汇聚到本机服务器；切到「全球态势」还能看 Cloudflare Radar 的全球攻击热区与主要攻击路径。
+
+只读展示，不封禁、不改防火墙、不调外部服务（除可选的 Radar 热区）。
+
+## 接口请求
+
+前端不直连后端，统一让宿主执行命令再解析 JSON。
+
+| 项 | 值 |
+|---|---|
+| 应用标识 | `user_id: jg` / `app_name: attackRadar` |
+| 二进制路径 | `/.__gmssh/plugin/liteapp/jg/attackRadar/app/bin/main` |
+| 命令名 | `radar` |
+
+```js
+const bin = '/.__gmssh/plugin/liteapp/jg/attackRadar/app/bin/main'
+
+await window.$gm.request('/api/command/exec_shell', {
+  method: 'post',
+  data: {
+    cmd_string: `'${bin}' radar --action server --json`,
+    timeout: '30', cwd: '', user: '',
+  },
+})
+```
+
+### 命令一览
+
+| `--action` | 参数 | 返回 |
+|---|---|---|
+| `server` | 无 | `{ location, events, is_real, updated }` |
+| `global` | 无 | 全球来源 IP 快照数组 |
+| `heat` | `--metric target\|origin`、`--range 3d` | `{ at, metric, range, list: [{ cc, name, value }] }` |
+| `paths` | `--range 3d` | `{ at, range, list: [{ from, to, value, ... }] }` |
+
+### 返回结构
+
+统一信封，业务数据在 `data` 里：
+
+```json
+{
+  "ok": true,
+  "data": {
+    "location": {
+      "ip": "182.254.156.53",
+      "country": "中国", "region": "上海", "city": "上海",
+      "lat": 31.2222, "lon": 121.4581,
+      "isp": "Shenzhen Tencent Computer Systems Company Limited",
+      "name": "中国 上海 上海",
+      "located": true
+    },
+    "events": [
+      { "id": "ssh_1", "ts": 1761700000000, "ip": "220.180.34.126",
+        "kind": "SSH 认证失败", "level": 3, "n": 1,
+        "src": { "lat": 31.86, "lon": 117.28, "name": "中国 (合肥)" } }
+    ],
+    "is_real": true,
+    "updated": 1761700000000
+  }
+}
+```
+
+`located` 为 `false` 表示经纬度只是占位值（IP 库没返回坐标），界面上会显示「位置探测中」而不是编一个假地址。
+
+### 服务器上直接验证
+
+```bash
+BIN=/.__gmssh/plugin/liteapp/jg/attackRadar/app/bin/main
+
+$BIN radar --action server --json | jq '.data.location'
+$BIN radar --action heat --metric target --range 3d --json | jq '.data.list[:5]'
+```
 
 ## 架构说明
 
@@ -10,7 +81,8 @@
   3D 用 Three.js，2D 用 Canvas 2D，地理数据用 d3-geo + topojson-client，
   全部以本地 vendor 文件引入。通过 ```window.$gm.request('/api/command/exec_shell', { data: { cmd_string } })``` 调度后端命令。
 - **后端**：Go 纯 CLI（```app/bin/main radar --action <server|global|heat|paths> --json```），单次执行输出紧凑 JSON 信封后即刻退出，无常驻进程，无 Unix Socket。
-- **降级保护**：当宿主的命令能力不可用（普通浏览器 + 未启动 dev-server）时，自动回退内置模拟态势数据；本地联调时 ```dev-server.mjs``` 会把 exec_shell 桥接成 ```go run ./cmd/main radar```，因此浏览器里看到的也是真实数据。
+- **降级保护**：当宿主的命令能力不可用（普通浏览器 + 未启动 dev-server）时，自动回退内置模拟态势数据；本地联调时 `dev-server.mjs` 会把 exec_shell 桥接成 `go run ./cmd/main radar`，因此浏览器里看到的也是真实数据。
+- **位置探测**：后端依次尝试 `ipwho.is` → `ip-api.com` → `cip.cc`，任一拿到经纬度即采用；都失败时返回 `located: false`，界面显示「位置探测中」，不伪造坐标。
 
 ## 目录结构
 
