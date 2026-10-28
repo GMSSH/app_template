@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>攻击雷达</title>
+<link rel="stylesheet" href="./css/radar.css" />
+</head>
+<body>
+<div class="app" id="app">
+  <!-- ========== 左侧面板 ========== -->
+  <aside class="side">
+    <header>
+      <div class="hdr-row">
+        <h1 id="title">攻击雷达</h1>
+      </div>
+      <p class="st"><i id="statusDot"></i><span id="statusText">正在获取态势数据...</span></p>
+
+      <!-- 全球：最高占比 -->
+      <p class="cnt" id="globalCnt" hidden>
+        <span id="topValue">—</span>
+        <small id="topLabel">正在获取全球数据</small>
+      </p>
+
+      <!-- 本机：攻击总数 + 服务器标签 -->
+      <div class="server-hero" id="serverHero" hidden>
+        <div class="cnt"><span id="serverTotal">0</span><small>次攻击尝试 · 本机防御</small></div>
+        <div class="server-tag clickable" id="serverTag">
+          <span class="loc-pin">📍</span>
+          <span class="loc-text" id="serverTagName">本机服务器</span>
+          <span class="loc-ip" id="serverTagIp"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 本机：事件类型筛选 -->
+    <div class="chips server-chips" id="kindChips" hidden>
+      <button class="on" data-kind="">全部</button>
+      <button data-kind="SSH 认证失败">SSH<small>0</small></button>
+      <button data-kind="Web 可疑请求">Web<small>0</small></button>
+      <button data-kind="PHP 漏洞探测">PHP 漏洞<small>0</small></button>
+      <button data-kind="Fail2ban 封禁">Fail2ban<small>0</small></button>
+    </div>
+
+    <!-- 全球：指标 + 视图分栏 -->
+    <div id="globalChips" hidden>
+      <div class="chips">
+        <button data-metric="target" class="on">被攻击地区</button>
+        <button data-metric="origin">攻击来源</button>
+        <span class="htip" id="heatTip"></span>
+      </div>
+      <div class="chips tabs">
+        <button data-tab="country" class="on">国家排行</button>
+        <button data-tab="path">攻击路径<small id="pathCount" hidden></small></button>
+        <button data-tab="ip">来源 IP</button>
+      </div>
+    </div>
+
+    <div class="scroll-host" id="listScroll">
+      <div id="listBody"></div>
+    </div>
+
+    <!-- 数据来源面板 -->
+    <div class="prov" id="prov" hidden>
+      <div class="pvl"><span>数据源</span><b>Cloudflare Radar</b></div>
+      <div class="pvl"><span>接口</span><code id="provApi">top/locations/target</code></div>
+      <div class="pvl"><span>统计窗口</span><b id="provRange">近 3 天</b></div>
+      <div class="pvl"><span>本次</span><b id="provMeta">实时请求</b></div>
+      <div class="pvl"><span>许可</span><b>CC BY-NC 4.0</b></div>
+    </div>
+  </aside>
+
+  <!-- ========== 3D / 2D 舞台 ========== -->
+  <main class="stage">
+    <canvas id="cv3" class="cv3"></canvas>
+    <canvas id="cv2" class="cv2 off"></canvas>
+  </main>
+
+  <!-- ========== 顶部切换 ========== -->
+  <nav class="top" id="topNav">
+    <button class="seg on" data-scope="global">全球态势</button>
+    <button class="seg" data-scope="server">我的服务器</button><i class="sep"></i>
+    <button class="seg on" data-view="3d">3D 地球</button>
+    <button class="seg" data-view="2d">2D 地图</button>
+  </nav>
+
+  <!-- 本机三项数字 -->
+  <div class="nums" id="nums" hidden>
+    <div><b id="numEvents">0</b><small>安全事件</small></div>
+    <div><b id="numIps">0</b><small>来源 IP</small></div>
+    <div><b id="numCountries">0</b><small>涉及国家</small></div>
+  </div>
+
+  <!-- 热区图例 -->
+  <div class="legend" id="legend" hidden>
+    <div class="lgb"></div>
+    <div class="lgl"><span>低</span><span>高</span></div>
+    <small id="legendNote">被攻击占比 · 弧线＝主要攻击路径</small>
+  </div>
+
+  <!-- 悬浮提示：本机 -->
+  <div class="tip server-tip" id="serverTip" hidden>
+    <div class="th"><b style="color:#38bdf8">📍 本机服务器 (受保护节点)</b><small id="stIp">本机</small></div>
+    <div class="tv">
+      <b id="stTotal" style="color:#fff">0 次</b>
+      <small>近 24 小时捕获防御总数</small>
+    </div>
+    <div class="tp">
+      <span>物理区域: <em id="stName">本机服务器</em></span>
+      <span>经纬度: <em id="stCoord">—</em></span>
+    </div>
+    <div class="tf">点击查看本机防御详情与状态</div>
+  </div>
+
+  <!-- 悬浮提示：国家 -->
+  <div class="tip" id="countryTip" hidden>
+    <div class="th"><b id="ctZh"></b><small id="ctCc"></small></div>
+    <div class="tv" id="ctValueBox">
+      <b id="ctValue">—</b>
+      <small id="ctRankNote"></small>
+    </div>
+    <div class="tp" id="ctPartners"></div>
+    <div class="tf" id="ctFooter"></div>
+  </div>
+
+  <!-- 详情卡片：本机服务器 -->
+  <section class="detail server-detail" id="serverDetail" hidden>
+    <button class="x" data-close="server">✕</button>
+    <div class="server-detail-hdr">
+      <span class="server-badge">受保护目标</span>
+      <h3 id="sdName">本机服务器</h3>
+    </div>
+    <dl>
+      <dt>公网出口 IP</dt><dd><code id="sdIp">127.0.0.1</code></dd>
+      <dt>地理位置</dt><dd id="sdLoc">—</dd>
+      <dt>坐标经纬</dt><dd id="sdCoord">—</dd>
+      <dt id="sdIspLabel">网络运营商</dt><dd id="sdIsp"></dd>
+      <dt>防御事件</dt><dd style="color:#38bdf8;font-weight:600" id="sdEvents">0 次尝试</dd>
+      <dt>风险源 IP</dt><dd id="sdIps">0 个独立 IP</dd>
+      <dt>涉及国家</dt><dd id="sdCountries">0 个地区</dd>
+      <dt>雷达防御状态</dt><dd style="color:#22c55e">● 实时监测中</dd>
+    </dl>
+    <p class="note">所有飞线终点汇聚于此节点，日志实时汇总自系统 Auth / Web / 防火墙。</p>
+  </section>
+
+  <!-- 详情卡片：国家 -->
+  <section class="detail" id="countryDetail" hidden>
+    <button class="x" data-close="country">✕</button>
+    <h3><span id="cdName"></span> <small class="cc" id="cdCc"></small></h3>
+    <dl>
+      <dt id="cdMetricLabel">被攻击占比</dt><dd id="cdValue">—</dd>
+      <dt>全球排名</dt><dd id="cdRank">—</dd>
+      <dt>统计窗口</dt><dd id="cdRange">—</dd>
+      <dt>数据来源</dt><dd>Cloudflare Radar</dd>
+    </dl>
+    <p class="pl" id="cdPartnersBox"><b id="cdPartnersTitle"></b><span></span></p>
+    <p class="note">国家级占比统计，不是逐条攻击事件；口径为此时间窗内全球 L3 攻击的占比。</p>
+  </section>
+
+  <!-- 详情卡片：事件 / 来源 IP -->
+  <section class="detail" id="eventDetail" hidden>
+    <button class="x" data-close="event">✕</button>
+    <h3 id="edTitle"></h3>
+    <dl id="edFields"></dl>
+    <p class="note">来源位置由 IP库估算，不代表攻击者真实物理位置。</p>
+  </section>
+
+  <!-- 启动遮罩 -->
+  <div class="boot" id="boot">
+    <div class="ring"></div>
+    <h2>全球攻击雷达</h2>
+    <div class="bar"><i id="bootBar"></i></div>
+    <p id="bootStep">正在初始化地图引擎……</p>
+    <div class="err" id="bootErr" hidden><p id="bootErrMsg"></p><button id="bootRetry">重试</button></div>
+  </div>
+</div>
+
+<!-- 地理数据（UMD，挂到 window.d3 / window.topojson） -->
+<script src="./vendor/d3-array.min.js"></script>
+<script src="./vendor/d3-geo.min.js"></script>
+<script src="./vendor/topojson-client.min.js"></script>
+<!-- 宿主 SDK -->
+<script src="./vendor/gm-sdk.js"></script>
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

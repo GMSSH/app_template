@@ -1,0 +1,14 @@
+.DS_Store
+._*
+node_modules/
+dist/
+*_dist.tar.gz
+.radar.token
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 运行时日志（backend/app/bin/logs 是本地运行产生的）
+backend/app/
