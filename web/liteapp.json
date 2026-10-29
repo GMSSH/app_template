@@ -1,0 +1,9 @@
+{
+  "user_id": "jg",
+  "app_name": "domainToolbox",
+  "name": "域名工具箱",
+  "app_title": "域名工具箱",
+  "version": "1.0.0",
+  "description": "专业网络工具 · 安全检测 · 域名与服务深度运维诊断",
+  "entry": "index.html"
+}

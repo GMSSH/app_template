@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>域名工具箱 - GMSSH</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="stars" class="stars"></div>
+
+    <!-- 顶栏 -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo"><svg viewBox="0 0 40 40" fill="none">
+  <defs><linearGradient id="bg-h" x1="8" y1="4" x2="32" y2="36" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#3a4553"/><stop offset="1" stop-color="#0d1218"/>
+  </linearGradient></defs>
+  <circle cx="20" cy="20" r="19" fill="url(#bg-h)" stroke="rgba(255,255,255,.16)"/>
+  <path d="M27.5 9.5C19.5 12.6 13 19 13 25.4c0 3.1 2.3 5.3 5.4 5.3 4.9 0 9.1-4.5 10-11.6"
+        stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>
+</svg></div>
+        <span class="brand-title">域名工具箱</span>
+      </div>
+
+      <form id="headerForm" class="search-capsule">
+        <div class="search-icon" data-icon="search"></div>
+        <input id="headerInput" class="search-input" type="text" placeholder="输入要诊断的域名，如 example.com" autocomplete="off" spellcheck="false" />
+        <button id="headerClear" type="button" class="search-clear">✕</button>
+        <button type="submit" class="search-submit" title="开始检测" data-icon="arrowRight"></button>
+      </form>
+
+      <div class="header-tags">
+        <div><span class="tag-dot"></span><span class="tag-text">让域名更透明</span></div>
+      </div>
+    </header>
+
+    <!-- 初始欢迎页 -->
+    <div id="welcomeView" class="welcome-view">
+      <div class="welcome-logo"><svg viewBox="0 0 40 40" fill="none">
+  <defs><linearGradient id="bg-w" x1="8" y1="4" x2="32" y2="36" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#3a4553"/><stop offset="1" stop-color="#0d1218"/>
+  </linearGradient></defs>
+  <circle cx="20" cy="20" r="19" fill="url(#bg-w)" stroke="rgba(255,255,255,.16)"/>
+  <path d="M27.5 9.5C19.5 12.6 13 19 13 25.4c0 3.1 2.3 5.3 5.4 5.3 4.9 0 9.1-4.5 10-11.6"
+        stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>
+</svg></div>
+      <h1 class="welcome-title">域名工具箱</h1>
+      <p class="welcome-desc">专业网络工具 · 安全检测 · 域名与服务深度运维诊断</p>
+      <form id="welcomeForm" class="welcome-search">
+        <input id="welcomeInput" type="text" placeholder="输入域名开始诊断，例如 example.com" autocomplete="off" spellcheck="false" />
+        <button type="submit" class="search-submit" title="开始检测" data-icon="arrowRight"></button>
+      </form>
+    </div>
+
+    <!-- 主工作台 -->
+    <main id="workbench" class="workbench">
+      <!-- 活动节点 → 详情面板的发光连接弧线 -->
+      <svg id="linkSvg" class="link-svg">
+        <defs>
+          <linearGradient id="activeLink" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85" />
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0.15" />
+          </linearGradient>
+        </defs>
+      </svg>
+
+      <section id="stage" class="stage">
+        <svg id="topologySvg" class="topology-svg"></svg>
+        <div id="centerCore" class="center-core">
+          <div id="centerDomainText" class="core-domain">example.com</div>
+          <div class="core-sub">域名诊断</div>
+        </div>
+        <div id="satelliteNodesWrap" class="satellite-nodes"></div>
+
+      </section>
+
+      <!-- 右侧详情面板 -->
+      <aside id="detailDrawer" class="detail-drawer">
+        <div class="drawer-header">
+          <div id="drawerIcon" class="drawer-icon-wrap" data-icon="ssl"></div>
+          <div class="drawer-title-box">
+            <div class="drawer-title-row">
+              <div class="drawer-title">
+                <span id="drawerTitle">SSL证书</span>
+                <span id="drawerBadge" class="node-badge badge-success">正常</span>
+              </div>
+              <div class="drawer-stamp">
+                <div class="drawer-stamp-label">最后检测</div>
+                <div id="drawerTime" class="drawer-stamp-time">--:--:--</div>
+              </div>
+            </div>
+            <div id="drawerSummary" class="drawer-summary">网站已正确配置有效的 SSL 证书，连接安全。</div>
+          </div>
+        </div>
+
+        <div class="drawer-body">
+          <div id="drawerMetricList" class="metric-list"></div>
+
+          <div id="drawerSnippetBox" class="snippet-box">
+            <div class="snippet-header">
+              <div class="snippet-header-left">
+                <span data-icon="code"></span>
+                <span id="drawerSnippetTitle">证书详情（原始数据）</span>
+              </div>
+              <button id="drawerCopySnippet" class="snippet-copy-btn">
+                <span data-icon="copy"></span>
+                <span>复制</span>
+              </button>
+            </div>
+            <pre id="drawerSnippetContent" class="snippet-content"></pre>
+          </div>
+        </div>
+
+        <button id="drawerActionBtn" class="drawer-action-btn">
+          <span data-icon="external"></span>
+          <span id="drawerActionText">查看证书详情</span>
+          <span data-icon="chevron"></span>
+        </button>
+      </aside>
+    </main>
+
+    <!-- 完整检测报告 -->
+    <div id="reportModal" class="report-modal">
+      <div class="modal-backdrop" id="modalBackdrop"></div>
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div>
+            <h2 id="modalDomainTitle" class="modal-title">完整检测报告</h2>
+            <div id="modalMeta" class="modal-meta">--</div>
+          </div>
+          <div class="modal-actions">
+            <button id="modalCopyBtn" class="snippet-copy-btn">
+              <span data-icon="copy"></span>
+              <span>复制全部结果</span>
+            </button>
+            <button id="modalCloseBtn" class="modal-close-btn">✕</button>
+          </div>
+        </div>
+        <div id="modalBody" class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 查询失败弹窗 -->
+  <div id="alertModal" class="alert-overlay" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle">
+    <div class="alert-card">
+      <div class="alert-icon">!</div>
+      <h3 id="alertTitle" class="alert-title">查询失败</h3>
+      <p id="alertMessage" class="alert-message"></p>
+      <p id="alertDetail" class="alert-detail"></p>
+      <button id="alertOk" class="alert-btn">知道了</button>
+    </div>
+  </div>
+
+  <script src="./vendor/gm-sdk.js"></script>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

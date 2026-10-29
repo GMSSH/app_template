@@ -1,136 +1,129 @@
-# app_template
+# 域名工具箱 (domainToolbox) · 极目桌面微应用
 
-GMSSH 微应用模板仓库。**每个微应用一个分支**，分支根目录直接放该应用的完整代码（前端 + 后端 + 打包脚本），不做嵌套目录。
+输入一个域名，一口气跑完 9 项真实网络检测：注册信息、DNS、多源 DNS、网站访问、SSL 证书、端口、跳转链、邮件配置、DNSSEC。
 
-## 分支目录
+结果按**中心辐射拓扑**铺开，点任一节点看详情。全程只读，不改服务器任何配置。
 
-| 分支 | 应用 | 目录结构 | 说明 |
-|---|---|---|---|
-| [portMap](../../tree/portMap) | 端口地图 | `web/` + `backend/` | 可视化查看服务器当前监听的 TCP/UDP 端口，按地址分组画成节点图，可点选查看进程、用户、命令行等归属信息 |
-| [systemScore](../../tree/systemScore) | 系统跑分 | `frontend/` + `backend/` | 一键跑分，输出 CPU 单核/多核、内存、磁盘、持续负载 5 个维度的综合性能分（满分 10000） |
-| [sshFootprint](../../tree/sshFootprint) | SSH 安全足迹 | `web/` + `backend/` | 只读统计本机 SSH 认证活动：失败/成功次数、时间分布、可疑来源 IP 排行，附原始日志取证 |
-| [attackRadar](../../tree/attackRadar) | 攻击雷达 | `web/` + `backend/` | 3D 地球 / 2D 平面双视图展示本机被攻击态势；另接 Cloudflare Radar 展示全球攻击热区与路径 |
-
-## 通用约定
-
-所有分支遵循同一套 GMSSH 微应用规范，换应用只换业务内容，框架部分完全一致。
-
-### 后端：纯 CLI，无常驻进程
-
-宿主每次调用都执行一次二进制，它打印一个 JSON 信封后立刻退出。没有 Unix Socket、没有 daemon、没有 RPC 框架。
-
-```
-/.__gmssh/plugin/liteapp/{user_id}/{app_name}/app/bin/main <命令> [参数] --json
-```
-
-```go
-command.Define("<命令名>").
-    Summary("cmd.xxx.summary").
-    Args(
-        command.Arg{Name: "action", Type: command.TypeString, Default: "scan"},
-        // ...
-    ).
-    Examples("<命令名> --json").
-    Handle(Run).
-    Register()
-```
-
-### 前端：`$gm.request` + `exec_shell`
-
-前端不直接连后端，而是让宿主代为执行命令：
-
-```js
-const bin = `/.__gmssh/plugin/liteapp/${user_id}/${app_name}/app/bin/main`
-const cmd_string = `'${bin}' <命令名> --action scan --json`
-
-await window.$gm.request('/api/command/exec_shell', {
-  method: 'post',
-  data: { cmd_string, timeout: '30', cwd: '', user: '' },
-})
-```
-
-返回值是 JSON 信封，`data` 字段才是业务数据：
-
-```json
-{ "ok": true, "data": { ... } }
-```
-
-`user_id` / `app_name` 从应用自己的 `liteapp.json` 读取（平台创建应用时写入），不要在代码里改。
-
-### 打包：两个独立产物
-
-```bash
-./pack.sh
-```
-
-| 产物 | 内容 | 部署位置 |
-|---|---|---|
-| `*_dist.tar.gz`（前端） | 静态文件，解压即用 | `app/www/` |
-| `backend_dist.tar.gz` | 平坦结构：`app/bin/main`、`install.sh`、`config/`、`data/`、`logs/`、`tmp/` | 应用根目录 |
-
-前端**不要**打成带顶层 `app/` 的嵌套结构；macOS 打包要带 `COPYFILE_DISABLE=1`，否则会混进 `._*` 元数据文件。
-
-## 新增一个微应用
-
-```bash
-# 1. 从 main 拉一个新分支，分支名 = 应用标识
-git clone git@github.com:GMSSH/app_template.git
-cd app_template
-git checkout -b myNewApp origin/main
-
-# 2. 在这个分支根目录直接放应用代码
-#    web/ 或 frontend/  前端
-#    backend/           Go CLI
-#    pack.sh            打包脚本
-#    README.md          本应用说明（标题、用途、请求示例）
-
-# 3. 提交推送
-git add -A
-git commit -m "feat: add myNewApp GMSSH micro-app"
-git push -u origin myNewApp
-```
-
-### 每个应用分支的 README 建议内容
-
-在下表的模板里把占位换成实际值，别人一眼就能知道这个应用干什么、怎么调：
-
-```markdown
-# 应用名 (appName) · 极目桌面微应用
-
-一句话说明这个应用解决什么问题。
-
-## 接口请求
+## 应用标识（appkey）
 
 | 项 | 值 |
 |---|---|
-| 应用标识 | `user_id: jg` / `app_name: myNewApp` |
-| 二进制路径 | `/.__gmssh/plugin/liteapp/jg/myNewApp/app/bin/main` |
-| 命令名 | `my_command` |
+| **user_id** | `jg` |
+| **app_name（appkey）** | `domainToolbox` |
+| 应用名称 | 域名工具箱 |
+| 应用标题 | 域名工具箱 |
+| 版本 | `1.0.0` |
+| 后端二进制 | `/.__gmssh/plugin/liteapp/jg/domainToolbox/app/bin/main` |
+| CLI 命令名 | `domain` |
+| 前端入口 | `web/index.html` |
+| 打包产物 | `web_dist.tar.gz` + `backend_dist.tar.gz` |
+
+身份配置见 `web/liteapp.json`。
+
+## 接口请求
+
+前端不直连后端，统一让宿主执行命令再解析 JSON。
 
 ```js
-await window.$gm.request('/api/command/exec_shell', {
-  method: 'post',
-  data: {
-    cmd_string: "'/.__gmssh/plugin/liteapp/jg/myNewApp/app/bin/main' my_command --action scan --json",
-    timeout: '30', cwd: '', user: '',
-  },
+const bin = '/.__gmssh/plugin/liteapp/jg/domainToolbox/app/bin/main'
+
+await window.$gm.command.exec_shell({
+  cmd_string: `${bin} domain --action overview --domain example.com --json`,
 })
 ```
 
-返回：
+### 命令一览
+
+| `--action` | 参数 | 用途 |
+|---|---|---|
+| `overview` | `--domain <域名>` | 九大模块并行检测，一次拿全部结果 |
+| `probe` | 无 | 健康探针：版本、引擎、时间 |
+| `rdap` | `--domain` | 注册信息（RDAP，无 RDAP 的 TLD 自动走 WHOIS） |
+| `dns` | `--domain` | A / AAAA / CNAME / MX / TXT / NS / CAA / SOA |
+| `multidns` | `--domain` | 本地 / Cloudflare / Google / AliDNS 四源对比 |
+| `web` | `--domain` | HTTP 访问与耗时分解（DNS / TCP / TLS / TTFB） |
+| `ssl` | `--domain` | TLS 握手取证书链、SAN、有效期、PEM 原文 |
+| `port` | `--domain` | TCP 80 / 443 连通性 |
+| `redirect` | `--domain` | 跳转链跟随（最多 10 跳，含死循环检测） |
+| `mail` | `--domain` | MX / SPF / DMARC / DKIM |
+| `dnssec` | `--domain` | DS / DNSKEY / RRSIG |
+
+### 返回结构
+
+统一信封，业务数据在 `data`：
 
 ```json
-{ "ok": true, "data": { "field": "value" } }
+{
+  "ok": true,
+  "data": {
+    "domain": "example.com",
+    "timestamp": "2026-10-29T20:12:00+08:00",
+    "httpStatus": 200,
+    "primaryIP": "93.184.216.34",
+    "modules": {
+      "rdap": { "module": "rdap", "status": "success", "durationMs": 144, "data": {}, "error": "" },
+      "dns": { "...": "..." }
+    }
+  }
+}
 ```
 
-## 本地联调
+- 每个模块有独立 `status`（`success` / `warning` / `error` / `unavailable` / `not_configured`）、独立超时与 `error`，单模块失败不影响其他模块。
+- 失败时整个命令返回 `{"ok":false,"error":{code,type,message,key}}`，退出码非 0。
+
+## 九大检测模块
+
+| 模块 | 内容 |
+|---|---|
+| 域名信息 | RDAP 标准协议 + IANA Bootstrap 自适应匹配注册局；`.cn` 等无 RDAP 的 TLD 自动改走 WHOIS(43)，含注册人、注册商、注册/到期时间、域名状态、权威 NS |
+| DNS 记录 | A、AAAA、CNAME、MX、TXT、NS、CAA、SOA，带 TTL 与解析器来源；查询超时的类型单独标记，不会当成"没有记录" |
+| 多源 DNS | 本地系统 DNS / Cloudflare 1.1.1.1 / Google 8.8.8.8 / AliDNS 223.5.5.5 并行对比，按 IP 集合判一致（忽略顺序），失败解析器单独计数 |
+| 网站访问 | 状态码、协议、Server、Content-Type，耗时分解 DNS / TCP / TLS / TTFB |
+| SSL 证书 | 证书链、签名算法、SAN 列表、有效期与剩余天数、PEM 原文 |
+| 端口连通 | TCP 80 / 443 拨测与延迟 |
+| 跳转链 | 逐跳跟随 301/302，记录每跳耗时与 Location，最多 10 跳 |
+| 邮件配置 | MX 优先级、SPF 策略、DMARC 策略、DKIM 选择器 |
+| DNSSEC | DS / DNSKEY / RRSIG 与启用状态 |
+
+## 安全边界
+
+- **每次拨号前校验解析 IP**：阻断回环 `127.0.0.0/8`、RFC1918（`10/8`、`172.16/12`、`192.168/16`）、链路本地 `169.254/16`、IPv6 本地/ULA 以及云厂商元数据地址，防 SSRF 与 DNS Rebinding。见 `backend/internal/biz/domain/security/ssrf.go`。
+- **只读**：不写配置、不改 DNS、不装软件、不调 AI/大模型，所有判定来自协议原文。
+- **真实数据**：不使用模拟数据；拿不到就如实报错并附带原因。
+
+## 目录结构
+
+```
+.
+├── pack.sh                  # 一键打包前端 + 后端
+├── web/                     # 零构建原生 HTML/CSS/JS（无运行时 CDN）
+│   ├── index.html
+│   ├── css/style.css
+│   ├── js/{app,api,icons}.js
+│   ├── vendor/gm-sdk.js     # 宿主 SDK
+│   ├── liteapp.json         # 应用标识
+│   └── dev-server.mjs       # 本地联调桥接（不进部署包）
+└── backend/                 # Go 纯 CLI（gmssh-cli-plugin）
+    ├── cmd/main/main.go
+    ├── internal/biz/domain/ # register / inspector / security / types
+    ├── internal/command/    # CLI 框架
+    └── i18n/                # 中英文案
+```
+
+## 本地开发
 
 ```bash
-cd web && node dev-server.mjs   # http://dev.adde.cn:5185
-```
+# 前端 + 后端一起跑（把 exec_shell 桥接到 go run）
+cd web && node dev-server.mjs        # http://dev.adde.cn:8085
+
+# 直接跑后端命令
+cd backend && go run ./cmd/main domain --action overview --domain example.com --json
 ```
 
-## 相关文档
+## 打包与部署
 
-- GMSSH 纯 CLI 架构与命令定义：见各分支 `backend/internal/command/`
-- 前端 SDK（`$gm.request`、`$gm.theme`、`$gm.getRectSize`）：`gm-app-sdk` 包
+```bash
+./pack.sh    # 产出 web_dist.tar.gz + backend_dist.tar.gz
+```
+
+后端包解开是扁平结构，`app/bin/main` 即入口；前端包解开内容即为站点根目录。

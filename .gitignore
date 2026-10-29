@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# 依赖
+node_modules/
+.pnpm-store/
+
+# 构建产物与部署包
+dist/
+*.tar.gz
+backend/dist/
+backend/app/
+
+# 运行日志与本地开发日志
+logs/
+backend/logs/
+*.log
+
+# 本地环境变量
+.env
+.env.local
+.env.*.local
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
