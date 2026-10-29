@@ -1,0 +1,9 @@
+{
+  "user_id": "jg",
+  "app_name": "webmasterToolbox",
+  "name": "站长百宝箱",
+  "app_title": "站长百宝箱",
+  "version": "0.1.0",
+  "description": "DNS、Ping、端口、HTTP、SSL 证书、WHOIS 检测与 JSON/Base64/哈希/时间戳工具",
+  "entry": "index.html"
+}

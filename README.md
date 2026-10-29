@@ -1,136 +1,152 @@
-# app_template
+# 站长百宝箱 (webmasterToolbox) · 极目桌面微应用
 
-GMSSH 微应用模板仓库。**每个微应用一个分支**，分支根目录直接放该应用的完整代码（前端 + 后端 + 打包脚本），不做嵌套目录。
+站长、运维每天真正会用到的检测工具合集：查一次 DNS、Ping 一下、看端口通不通、盯一眼证书还剩几天、查域名什么时候注册的；再顺手带上 JSON 格式化、Base64、哈希、时间戳这些文本小工具。
 
-## 分支目录
+界面是一个首页宫格 + 10 个工具页，全部**真实数据**：网络类走服务器本机的 `dig` / `ping` / `curl` / `openssl` / WHOIS(TCP 43)，文本类在浏览器本地算，没有任何 mock。
 
-| 分支 | 应用 | 目录结构 | 说明 |
-|---|---|---|---|
-| [portMap](../../tree/portMap) | 端口地图 | `web/` + `backend/` | 可视化查看服务器当前监听的 TCP/UDP 端口，按地址分组画成节点图，可点选查看进程、用户、命令行等归属信息 |
-| [systemScore](../../tree/systemScore) | 系统跑分 | `frontend/` + `backend/` | 一键跑分，输出 CPU 单核/多核、内存、磁盘、持续负载 5 个维度的综合性能分（满分 10000） |
-| [sshFootprint](../../tree/sshFootprint) | SSH 安全足迹 | `web/` + `backend/` | 只读统计本机 SSH 认证活动：失败/成功次数、时间分布、可疑来源 IP 排行，附原始日志取证 |
-| [attackRadar](../../tree/attackRadar) | 攻击雷达 | `web/` + `backend/` | 3D 地球 / 2D 平面双视图展示本机被攻击态势；另接 Cloudflare Radar 展示全球攻击热区与路径 |
-
-## 通用约定
-
-所有分支遵循同一套 GMSSH 微应用规范，换应用只换业务内容，框架部分完全一致。
-
-### 后端：纯 CLI，无常驻进程
-
-宿主每次调用都执行一次二进制，它打印一个 JSON 信封后立刻退出。没有 Unix Socket、没有 daemon、没有 RPC 框架。
-
-```
-/.__gmssh/plugin/liteapp/{user_id}/{app_name}/app/bin/main <命令> [参数] --json
-```
-
-```go
-command.Define("<命令名>").
-    Summary("cmd.xxx.summary").
-    Args(
-        command.Arg{Name: "action", Type: command.TypeString, Default: "scan"},
-        // ...
-    ).
-    Examples("<命令名> --json").
-    Handle(Run).
-    Register()
-```
-
-### 前端：`$gm.request` + `exec_shell`
-
-前端不直接连后端，而是让宿主代为执行命令：
-
-```js
-const bin = `/.__gmssh/plugin/liteapp/${user_id}/${app_name}/app/bin/main`
-const cmd_string = `'${bin}' <命令名> --action scan --json`
-
-await window.$gm.request('/api/command/exec_shell', {
-  method: 'post',
-  data: { cmd_string, timeout: '30', cwd: '', user: '' },
-})
-```
-
-返回值是 JSON 信封，`data` 字段才是业务数据：
-
-```json
-{ "ok": true, "data": { ... } }
-```
-
-`user_id` / `app_name` 从应用自己的 `liteapp.json` 读取（平台创建应用时写入），不要在代码里改。
-
-### 打包：两个独立产物
-
-```bash
-./pack.sh
-```
-
-| 产物 | 内容 | 部署位置 |
-|---|---|---|
-| `*_dist.tar.gz`（前端） | 静态文件，解压即用 | `app/www/` |
-| `backend_dist.tar.gz` | 平坦结构：`app/bin/main`、`install.sh`、`config/`、`data/`、`logs/`、`tmp/` | 应用根目录 |
-
-前端**不要**打成带顶层 `app/` 的嵌套结构；macOS 打包要带 `COPYFILE_DISABLE=1`，否则会混进 `._*` 元数据文件。
-
-## 新增一个微应用
-
-```bash
-# 1. 从 main 拉一个新分支，分支名 = 应用标识
-git clone git@github.com:GMSSH/app_template.git
-cd app_template
-git checkout -b myNewApp origin/main
-
-# 2. 在这个分支根目录直接放应用代码
-#    web/ 或 frontend/  前端
-#    backend/           Go CLI
-#    pack.sh            打包脚本
-#    README.md          本应用说明（标题、用途、请求示例）
-
-# 3. 提交推送
-git add -A
-git commit -m "feat: add myNewApp GMSSH micro-app"
-git push -u origin myNewApp
-```
-
-### 每个应用分支的 README 建议内容
-
-在下表的模板里把占位换成实际值，别人一眼就能知道这个应用干什么、怎么调：
-
-```markdown
-# 应用名 (appName) · 极目桌面微应用
-
-一句话说明这个应用解决什么问题。
-
-## 接口请求
+## 应用标识
 
 | 项 | 值 |
 |---|---|
-| 应用标识 | `user_id: jg` / `app_name: myNewApp` |
-| 二进制路径 | `/.__gmssh/plugin/liteapp/jg/myNewApp/app/bin/main` |
-| 命令名 | `my_command` |
+| 应用名称 | 站长百宝箱 |
+| appid | `user_id: jg` / `app_name: webmasterToolbox` |
+| 部署路径 | `/.__gmssh/plugin/liteapp/jg/webmasterToolbox/` |
+| 二进制路径 | `/.__gmssh/plugin/liteapp/jg/webmasterToolbox/app/bin/main` |
+| 命令名 | `toolbox`（一个命令，按 `--action` 分发） |
+| 前端技术 | 原生 HTML5 / CSS3 / ES Modules，**零构建** |
+
+## 功能
+
+### 网络检测（后端真实执行）
+
+| 工具 | action | 数据来源 | 说明 |
+|---|---|---|---|
+| DNS 查询 | `dns` | `dig` → `nslookup` → `getent` 逐级降级 | A / AAAA / CNAME / MX / TXT / NS，`ALL` 一次性查全并按类型分组；支持指定 DNS 服务器 |
+| Ping 检测 | `ping` | 系统 `ping` | 5 次探测，丢包位置来自 `icmp_seq` 真实空缺，TTL / 字节数取回包原文 |
+| 端口检测 | `port` | 纯 TCP 连接 | 21/22/80/443/3306/6379/8080 并发探测，只输出可确证的 开放 / 关闭(RST) / 已过滤(超时) |
+| HTTP 状态 | `http` | `curl` | 状态码、协议、远程 IP、重定向次数、DNS/TCP/TLS/TTFB/总耗时拆解、最终响应头 |
+| SSL 证书 | `ssl` | `openssl s_client` + `x509` | 颁发者、有效期与剩余天数、签名算法、公钥、SAN、证书链、SHA-256 指纹 |
+| WHOIS 查询 | `whois` | 裸 TCP 43（IANA → 注册局） | 注册商、注册/到期/更新时间、域名状态、NS、DNSSEC，中英注册局格式都归一成中文标签 |
+
+### 文本工具（浏览器本地，不发请求）
+
+| 工具 | 说明 |
+|---|---|
+| JSON 工具 | 格式化 / 压缩 / 校验，报错带位置提示 |
+| Base64 | UTF-8 安全的编码与解码 |
+| 哈希计算 | SHA-1 / SHA-256 / SHA-384 / SHA-512，输入即算，点击复制 |
+| 时间戳转换 | 当前时间实时刷新、时间戳↔日期双向互转 |
+
+> 哈希用纯 JS 实现（`web/js/sha.js`）：微应用可能被宿主以 http 源加载，此时浏览器不提供 `crypto.subtle`，不能因此让工具不可用。算法常量按 FIPS 180-4 从素数算出，与 `sha1sum`/`sha256sum` 输出逐字节一致。
+
+## 接口请求
+
+前端不直连后端，统一让宿主执行命令再解析 JSON。唯一入口是 `web/js/cli.js`。
 
 ```js
+const bin = '/.__gmssh/plugin/liteapp/jg/webmasterToolbox/app/bin/main'
+
 await window.$gm.request('/api/command/exec_shell', {
   method: 'post',
   data: {
-    cmd_string: "'/.__gmssh/plugin/liteapp/jg/myNewApp/app/bin/main' my_command --action scan --json",
+    cmd_string: `'${bin}' toolbox --action 'dns' --target 'example.com' --type 'ALL' --json`,
     timeout: '30', cwd: '', user: '',
   },
 })
 ```
 
-返回：
+命令参数一律 **单引号转义 + 字符白名单**，后端再用「可执行文件 + 参数数组」执行外部命令，用户输入永远无法变成命令拼接。
+
+### 命令一览
+
+| action | 主要参数 | 用途 |
+|---|---|---|
+| `probe` | 无 | 检测本机有哪些依赖可用（ping/dig/nslookup/curl/openssl/whois） |
+| `dns` | `--target` `--type` `--server` | 域名解析 |
+| `ping` | `--target` `--count` | 网络连通性 |
+| `port` | `--target` | 常用端口探测 |
+| `http` | `--target` `--port` | 网站响应与计时 |
+| `ssl` | `--target` `--port`（默认 443） | 证书详情 |
+| `whois` | `--target` | 域名注册信息 |
+
+公共参数：`--timeout`（单阶段超时秒数，1–60）。
+
+### 返回结构
+
+统一信封，业务数据在 `data` 里；失败时信封写到 stderr，退出码 1（用法错误 2）：
 
 ```json
-{ "ok": true, "data": { "field": "value" } }
+{
+  "ok": true,
+  "data": {
+    "host": "example.com",
+    "checks": [
+      { "port": 443, "service": "HTTPS", "state": "open", "elapsed_ms": 363 }
+    ],
+    "open": 3, "closed": 0, "filtered": 4, "errors": 0, "elapsed_ms": 5001
+  }
+}
 ```
 
-## 本地联调
+能力缺失时不伪造结果：`supported: false` + `error_kind: "missing_tool"`，界面直接显示原因。
+
+### 服务器上直接验证
 
 ```bash
-cd web && node dev-server.mjs   # http://dev.adde.cn:5185
-```
+BIN=/.__gmssh/plugin/liteapp/jg/webmasterToolbox/app/bin/main
+
+$BIN toolbox --action probe --json
+$BIN toolbox --action dns   --target example.com --type ALL --json
+$BIN toolbox --action port  --target example.com --json
+$BIN toolbox --action ssl   --target example.com --json
 ```
 
-## 相关文档
+## 架构说明
 
-- GMSSH 纯 CLI 架构与命令定义：见各分支 `backend/internal/command/`
-- 前端 SDK（`$gm.request`、`$gm.theme`、`$gm.getRectSize`）：`gm-app-sdk` 包
+- **前端** `web/`：纯原生 ES Module，无框架、无打包、无路由库，页面切换靠 `location.hash`，各页输入与结果状态保留。
+- **后端** `backend/`：`gmssh-cli-plugin` 纯 CLI，宿主每次操作执行一次、打印 JSON 后退出；框架层不含业务代码。
+- 所有网络检测只读，不安装软件、不改系统配置、不动防火墙。
+
+## 目录结构
+
+```
+站长百宝箱/
+├── web/                        # 前端（零构建，直接部署）
+│   ├── index.html
+│   ├── css/style.css
+│   ├── img/bg.jpg
+│   ├── js/app.js               # 首页 + 10 个工具
+│   ├── js/cli.js               # 唯一请求入口：exec_shell → 后端 CLI
+│   ├── js/sha.js               # SHA-1/256/384/512（纯 JS）
+│   ├── vendor/gm-sdk.js        # 宿主 SDK
+│   ├── dev-server.mjs          # 本地联调（PORT 环境变量，默认 5185）
+│   └── liteapp.json            # 应用身份
+├── backend/                    # Go 纯 CLI
+│   ├── cmd/main/main.go
+│   └── internal/biz/toolbox/   # dns / dnsall / ping / portscan / http / ssl / whois
+├── pack.sh                     # 产出 web_dist.tar.gz + backend_dist.tar.gz
+└── README.md
+```
+
+## 本地开发与打包
+
+```bash
+# 前端联调（把 exec_shell 桥接成 go run）
+cd web && node dev-server.mjs          # http://dev.adde.cn:5185
+PORT=8085 node dev-server.mjs          # 换端口
+
+# 后端自检与交叉编译
+cd backend && make check && make linux-amd64
+
+# 打包
+./pack.sh
+```
+
+- `web_dist.tar.gz` → 解到 `web/`
+- `backend_dist.tar.gz` → 解到 `app/`（根目录含 `install.sh` / `config` / `data` / `logs` / `tmp` / `bin/main`）
+
+## 依赖提醒
+
+- 网络类工具依赖服务器上的 `ping`、`dig`（或 `nslookup` / `getent`）、`curl`、`openssl`；缺失时界面明确提示，不会假装成功。
+- WHOIS 走 TCP 43，部分网络会封锁该端口，失败时显示具体原因。
+- 宿主的 `exec_shell` 超时是 30 秒，端口探测单端口等待已限制在 5 秒内。

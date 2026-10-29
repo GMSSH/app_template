@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# 依赖（本项目前端零构建，无 node_modules，留作万一）
+node_modules/
+.pnpm-store/
+
+# 构建产物（由 ./pack.sh 生成）
+dist/
+*.tar.gz
+
+# 后端编译产物
+backend/main
+backend/dist/
+backend/app/
+
+# 运行时数据与日志
+backend/data/
+backend/logs/
+backend/tmp/
+
+# 本地环境变量
+.env
+.env.local
+.env.*.local
+
+# 编辑器
+.idea/
+.vscode/
+*.swp

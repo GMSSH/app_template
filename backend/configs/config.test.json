@@ -1,0 +1,7 @@
+{
+  "log": {
+    "level": "warn",
+    "console": false,
+    "max_days": 3
+  }
+}

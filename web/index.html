@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>站长百宝箱</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="win">
+  <div class="view" id="view"></div>
+  <button class="sw" id="sw" aria-label="切换明暗主题"><span id="s1"></span><span id="s2"></span><b></b></button>
+</div>
+<div class="toast" id="toast"></div>
+<!-- 宿主 SDK 必须早于业务模块引入，window.$gm 由它注入 -->
+<script src="vendor/gm-sdk.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
